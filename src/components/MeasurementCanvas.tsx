@@ -57,9 +57,12 @@ export function MeasurementCanvas({ image }: MeasurementCanvasProps) {
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.src = image;
+    
     img.onload = () => {
+      console.log('V2: Image loaded:', { width: img.width, height: img.height });
       setImageObj(img);
       setNaturalSize({ width: img.width, height: img.height });
+      
       setTimeout(() => {
         const container = containerRef.current;
         if (container) {
@@ -68,9 +71,14 @@ export function MeasurementCanvas({ image }: MeasurementCanvasProps) {
             (container.clientHeight - 32) / img.height,
             1
           );
+          console.log('V2: Setting zoom:', z);
           setZoom(z);
         }
       }, 100);
+    };
+    
+    img.onerror = (err) => {
+      console.error('V2: Failed to load image:', err);
     };
   }, [image]);
 
