@@ -55,30 +55,42 @@ export function MeasurementCanvas({ image }: MeasurementCanvasProps) {
   // Load image
   useEffect(() => {
     const img = new window.Image();
-    img.crossOrigin = "anonymous";
     img.src = image;
-    
     img.onload = () => {
-      console.log('V2: Image loaded:', { width: img.width, height: img.height });
       setImageObj(img);
       setNaturalSize({ width: img.width, height: img.height });
-      
-      setTimeout(() => {
-        const container = containerRef.current;
-        if (container) {
-          const z = Math.min(
-            (container.clientWidth - 32) / img.width,
-            (container.clientHeight - 32) / img.height,
-            1
-          );
-          console.log('V2: Setting zoom:', z);
-          setZoom(z);
+      // Use ResizeObserver so we get real dimensions once layout is complete.
+      // Falls back to a short retry loop for browsers without ResizeObserver.
+      const computeZoom = (w: number, h: number) => {
+        if (w <= 0 || h <= 0) return;
+        const z = Math.min((w - 32) / img.width, (h - 32) / img.height, 1);
+        if (z > 0 && isFinite(z)) setZoom(z);
+      };
+
+      const container = containerRef.current;
+      if (container) {
+        if (container.clientWidth > 0) {
+          computeZoom(container.clientWidth, container.clientHeight);
+        } else if (typeof ResizeObserver !== "undefined") {
+          const ro = new ResizeObserver((entries) => {
+            const { width, height } = entries[0].contentRect;
+            computeZoom(width, height);
+            ro.disconnect();
+          });
+          ro.observe(container);
+        } else {
+          // Fallback: retry a few times
+          let attempts = 0;
+          const retry = setInterval(() => {
+            attempts++;
+            if (container.clientWidth > 0) {
+              computeZoom(container.clientWidth, container.clientHeight);
+              clearInterval(retry);
+            }
+            if (attempts > 10) clearInterval(retry);
+          }, 50);
         }
-      }, 100);
-    };
-    
-    img.onerror = (err) => {
-      console.error('V2: Failed to load image:', err);
+      }
     };
   }, [image]);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ export function ImageUploader({ onImageSelect }: ImageUploaderProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      onImageSelect(result);
+      if (result) onImageSelect(result);
     };
     reader.onerror = () => setError("Error reading file. Please try again.");
     reader.readAsDataURL(file);
@@ -50,16 +50,26 @@ export function ImageUploader({ onImageSelect }: ImageUploaderProps) {
         onDrop={handleDrop}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
-        onClick={() => document.getElementById("file-input")?.click()}
+        onClick={() => document.getElementById("file-input-gallery")?.click()}
       >
+        {/* Gallery picker — NO capture attribute, shows full photo library on mobile */}
         <input
-          id="file-input"
+          id="file-input-gallery"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
+        />
+        {/* Camera-only input used by the Take Photo button */}
+        <input
+          id="file-input-camera"
           type="file"
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
         />
+
         <div className="flex flex-col items-center gap-3">
           <div className="p-4 rounded-full bg-muted">
             <Upload className="w-8 h-8 text-muted-foreground" />
@@ -72,8 +82,11 @@ export function ImageUploader({ onImageSelect }: ImageUploaderProps) {
       </div>
 
       <div className="flex gap-3 flex-wrap justify-center">
-        <Button size="lg" onClick={() => document.getElementById("file-input")?.click()}>
-          <ImageIcon className="w-4 h-4 mr-2" /> Choose photo
+        <Button size="lg" onClick={() => document.getElementById("file-input-camera")?.click()}>
+          <Camera className="w-4 h-4 mr-2" /> Take photo
+        </Button>
+        <Button size="lg" variant="outline" onClick={() => document.getElementById("file-input-gallery")?.click()}>
+          <ImageIcon className="w-4 h-4 mr-2" /> Choose from gallery
         </Button>
       </div>
 
